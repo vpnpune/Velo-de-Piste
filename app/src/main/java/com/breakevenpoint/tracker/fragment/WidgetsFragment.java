@@ -26,9 +26,9 @@ import static android.content.Context.MODE_PRIVATE;
 public class WidgetsFragment extends Fragment {
 
     private EditText et_main_3;
-    private AdView ad_view_widget;
-    private CardView card_ad_widget;
-    private TextView tv_ad;
+//    private AdView ad_view_widget;
+//    private CardView card_ad_widget;
+//    private TextView tv_ad;
 
     @Nullable
     @Override
@@ -36,9 +36,9 @@ public class WidgetsFragment extends Fragment {
         NestedScrollView nestedScrollView = (NestedScrollView) inflater.inflate(R.layout.fragment_widgets, container, false);
         et_main_3 = nestedScrollView.findViewById(R.id.et_main_3);
 
-        ad_view_widget = nestedScrollView.findViewById(R.id.ad_view_widget);
-        card_ad_widget = nestedScrollView.findViewById(R.id.card_ad_widget);
-        tv_ad = nestedScrollView.findViewById(R.id.tv_ad);
+//        ad_view_widget = nestedScrollView.findViewById(R.id.ad_view_widget);
+//        card_ad_widget = nestedScrollView.findViewById(R.id.card_ad_widget);
+//        tv_ad = nestedScrollView.findViewById(R.id.tv_ad);
 
         return nestedScrollView;
     }
@@ -48,21 +48,21 @@ public class WidgetsFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         et_main_3.requestFocus();
 
-        showAd();
+//        showAd();
     }
 
     public void showAd() {
         SharedPreferences sharedPreferences = getContext().getSharedPreferences("app", MODE_PRIVATE);
         if (!sharedPreferences.getBoolean("isDonated", false)) {
             AdRequest adRequest = new AdRequest.Builder().setRequestAgent("android_studio:ad_template").build();
-            ad_view_widget.loadAd(adRequest);
+  //          ad_view_widget.loadAd(adRequest);
 
             Animation animation = new AlphaAnimation(0.0f, 1.0f);
             animation.setDuration(500);
-            tv_ad.setVisibility(View.VISIBLE);
-            tv_ad.startAnimation(animation);
-            card_ad_widget.setVisibility(View.VISIBLE);
-            card_ad_widget.startAnimation(animation);
+//            tv_ad.setVisibility(View.VISIBLE);
+//            tv_ad.startAnimation(animation);
+//            card_ad_widget.setVisibility(View.VISIBLE);
+//            card_ad_widget.startAnimation(animation);
         }
     }
 

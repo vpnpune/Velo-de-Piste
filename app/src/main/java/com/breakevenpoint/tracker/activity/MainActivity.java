@@ -31,6 +31,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
+import com.breakevenpoint.model.APP_CONSTANTS;
 import com.bumptech.glide.Glide;
 import com.breakevenpoint.tracker.Constant;
 import com.breakevenpoint.tracker.R;
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     // Used in checking for runtime permissions.
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-
+    SharedPreferences sharedPreferences;
 
 
     public Handler mHandler = new Handler() {
@@ -104,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        sharedPreferences = getSharedPreferences(APP_CONSTANTS.VELO_PREFERENCES, MODE_PRIVATE);
 
         initView();
         initViewPager();
@@ -171,13 +173,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         titles.add(getString(R.string.tab_title_main_2));
         titles.add(getString(R.string.tab_title_main_3));
         mTabLayout.addTab(mTabLayout.newTab().setText(titles.get(0)));
-        mTabLayout.addTab(mTabLayout.newTab().setText(titles.get(1)));
-        mTabLayout.addTab(mTabLayout.newTab().setText(titles.get(2)));
+        //mTabLayout.addTab(mTabLayout.newTab().setText(titles.get(1)));
+        //mTabLayout.addTab(mTabLayout.newTab().setText(titles.get(2)));
 
         List<Fragment> fragments = new ArrayList<>();
         fragments.add(new CardsFragment());
-        fragments.add(new DialogsFragment());
-        fragments.add(new WidgetsFragment());
+        //fragments.add(new DialogsFragment());
+        //fragments.add(new WidgetsFragment());
 
         mViewPager.setOffscreenPageLimit(2);
 
@@ -214,8 +216,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.nav_header:
-                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                startActivity(intent);
+                boolean loginFlag = sharedPreferences.getBoolean(APP_CONSTANTS.LOGIN_FLAG, false);
+                if (loginFlag) {
+                    Intent intent = new Intent(MainActivity.this, MapHomeActivity.class);
+                    String riderName = sharedPreferences.getString(APP_CONSTANTS.RIDER_NAME,"DUMMY");
+                    String riderNummber = sharedPreferences.getString(APP_CONSTANTS.RIDER_ID,"0000");
+                    intent.putExtra("riderName", riderName);
+                    intent.putExtra("riderNumber", riderNummber);
+                    startActivity(intent);
+                    Log.e(TAG, "Sesssion Retrived "+riderName+":"+riderNummber);
+                }else{
+                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                }
+
+
                 DrawerLayout drawer = findViewById(R.id.drawer_layout);
                 drawer.closeDrawer(GravityCompat.START);
                 break;
@@ -240,11 +255,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Intent intent;
         switch (item.getItemId()) {
             case R.id.action_menu_main_1:
-                Intent intent = new Intent(this, AboutActivity.class);
-                startActivity(intent);
+                Log.e("MainActivity", "About clicked from option");
+                //intent = new Intent(this, AboutActivity.class);
+                //startActivity(intent);
                 break;
+            case R.id.action_menu_main_2:
+                Log.e("MainActivity", "Logout Clicked");
+                // clear shared preferences here
+                SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
+                preferencesEditor.clear();
+                preferencesEditor.apply();
+                Snackbar snackbar = Snackbar
+                        .make(drawer, "Logged out Successfully!", Snackbar.LENGTH_LONG);
+                snackbar.show();
+                //intent = new Intent(this, AboutActivity.class);
+                //startActivity(intent);
+                break;
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -280,14 +310,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 startActivity(intent);
                 break;
 
-            case R.id.nav_about:
+            /*case R.id.nav_about:
                 intent.setClass(this, AboutActivity.class);
                 startActivity(intent);
-                break;
+                Log.e("MainActivity", "About clicked");
+                break;*/
 
             case R.id.nav_donate:
-                intent.setClass(this, DonateActivity.class);
-                startActivity(intent);
+                //intent.setClass(this, DonateActivity.class);
+                //startActivity(intent);
                 break;
 
             case R.id.nav_color:
@@ -298,9 +329,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     }
                     startActivity(intent);
                 } else {
-                    intent.setData(Uri.parse(Constant.MATERIAL_DESIGN_COLOR_URL));
+                    /*intent.setData(Uri.parse(Constant.MATERIAL_DESIGN_COLOR_URL));
                     intent.setAction(Intent.ACTION_VIEW);
-                    startActivity(intent);
+                    startActivity(intent);*/
                 }
                 break;
         }
@@ -322,51 +353,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onDestroy() {
         mHandler.removeCallbacksAndMessages(null);
         super.onDestroy();
-    }
-
-
-// ask permission here itself
-private void requestPermissions() {
-    boolean shouldProvideRationale =
-            ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION);
-
-    // Provide an additional rationale to the user. This would happen if the user denied the
-    // request previously, but didn't check the "Don't ask again" checkbox.
-    if (shouldProvideRationale) {
-            Snackbar.make(
-                    findViewById(R.id.activity_maphome),
-                    R.string.permission_rationale,
-                    Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.ok, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            // Request permission
-                            ActivityCompat.requestPermissions(MainActivity.this,
-                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                                    REQUEST_PERMISSIONS_REQUEST_CODE);
-                        }
-                    })
-                    .show();
-        Log.e(TAG, "Displaying permission rationale to provide additional context.");
-    } else {
-        Log.e(TAG, "Requesting permission");
-        // Request permission. It's possible this can be auto answered if device policy
-        // sets the permission in a given state or the user denied the permission
-        // previously and checked "Never ask again".
-        ActivityCompat.requestPermissions(MainActivity.this,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                REQUEST_PERMISSIONS_REQUEST_CODE);
-    }
-}
-
-    /**
-     * Returns the current state of the permissions needed.
-     */
-    private boolean checkPermissions() {
-        int permissionState = ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION);
-        return permissionState == PackageManager.PERMISSION_GRANTED;
     }
 
 }

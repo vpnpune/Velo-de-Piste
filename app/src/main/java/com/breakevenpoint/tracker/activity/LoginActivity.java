@@ -4,6 +4,7 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.breakevenpoint.model.APP_CONSTANTS;
 import com.breakevenpoint.tracker.R;
 
 import java.util.ArrayList;
@@ -49,15 +51,15 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     // Keep track of the login task to ensure we can cancel it if requested.
     private UserLoginTask mAuthTask = null;
 
-    private AutoCompleteTextView mUserNameView,mRiderNameView,mRiderNumberView;
-    private TextInputLayout input_user_name, input_password, input_rider_name,input_rider_number;
+    private AutoCompleteTextView mUserNameView, mRiderNameView, mRiderNumberView;
+    private TextInputLayout input_user_name, input_password, input_rider_name, input_rider_number;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
     private Button login_button;
     //private EditText mRiderNameView;
     //private EditText mRiderNumberView;
-
+    SharedPreferences sharedPreferences;
     static String riderName;
     static String riderNummber;
 
@@ -65,6 +67,8 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sharedPreferences = getSharedPreferences(APP_CONSTANTS.VELO_PREFERENCES, MODE_PRIVATE);
+
         setContentView(R.layout.activity_login);
         initView();
     }
@@ -83,7 +87,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         input_rider_name = findViewById(R.id.input_rider_name);
         input_rider_number = findViewById(R.id.input_rider_no);
 
-        if(TextUtils.isEmpty(MapHomeActivity.RIDER_NAME)){
+        if (TextUtils.isEmpty(MapHomeActivity.RIDER_NAME)) {
             mRiderNumberView.setText(MapHomeActivity.RIDER_NUMBER);
             mRiderNameView.setText(MapHomeActivity.RIDER_NAME);
         }
@@ -101,7 +105,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         });
         mRiderNameView = findViewById(R.id.tv_rider_name);
         mRiderNumberView = findViewById(R.id.tv_rider_no);
-
 
 
         login_button = findViewById(R.id.btn_login);
@@ -149,8 +152,8 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         String userName = mUserNameView.getText().toString();
         String password = mPasswordView.getText().toString();
 
-         riderName = mRiderNameView.getText().toString();
-         riderNummber = mRiderNumberView.getText().toString();
+        riderName = mRiderNameView.getText().toString();
+        riderNummber = mRiderNumberView.getText().toString();
         boolean cancel = false;
         View focusView = null;
         if (TextUtils.isEmpty(riderName)) {
@@ -211,8 +214,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 return;
             }
         }
-        ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 123);
-
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE}, 123);
 
 
     }
@@ -220,21 +222,30 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     @Override
     public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions, @NonNull final int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == 123) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted.
                 Intent i = new Intent(LoginActivity.this, MapHomeActivity.class);
                 //i.putExtra("id", mEmailView.getText().toString());
                 //i.putExtra("pass", mPasswordView.getText().toString());
                 i.putExtra("riderName", riderName);
                 i.putExtra("riderNumber", riderNummber);
+                SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
+                preferencesEditor.putBoolean(APP_CONSTANTS.LOGIN_FLAG,true);
+                preferencesEditor.putString(APP_CONSTANTS.RIDER_ID,riderNummber);
+                preferencesEditor.putString(APP_CONSTANTS.RIDER_NAME,riderName);
+                preferencesEditor.apply();
                 startActivity(i);
             } else {
                 // User refused to grant permission. You can add AlertDialog here
-                Toast.makeText(this, "You didn't give permission to access device location", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "You didn't give permission to access device location & SMS", Toast.LENGTH_LONG).show();
 
             }
         }
+
+
     }
 
     private boolean isPhoneValid(String userName) {

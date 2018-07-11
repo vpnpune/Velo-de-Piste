@@ -42,8 +42,8 @@ public class CardsFragment extends Fragment implements View.OnClickListener, Vie
             img_main_card41_share, img_main_card42_share;
     private CardView card_main_1_1, card_main_1_2, card_main_1_3, card_main_1_4_1, card_main_1_4_2;
     private AlphaAnimation alphaAnimation, alphaAnimationShowIcon;
-    private AdView ad_view_card;
-    private CardView card_ad_card;
+    //private AdView ad_view_card;
+    //private CardView card_ad_card;
 
     @Nullable
     @Override
@@ -82,8 +82,8 @@ public class CardsFragment extends Fragment implements View.OnClickListener, Vie
         Glide.with(getContext()).load(R.drawable.material_design_1).apply(new RequestOptions().fitCenter()).into(img_main_card_41);
         Glide.with(getContext()).load(R.drawable.material_design_1).apply(new RequestOptions().fitCenter()).into(img_main_card_42);
 
-        ad_view_card = nestedScrollView.findViewById(R.id.ad_view_card);
-        card_ad_card = nestedScrollView.findViewById(R.id.card_ad_card);
+        //ad_view_card = nestedScrollView.findViewById(R.id.ad_view_card);
+        //card_ad_card = nestedScrollView.findViewById(R.id.card_ad_card);
 
         return nestedScrollView;
     }
@@ -126,7 +126,7 @@ public class CardsFragment extends Fragment implements View.OnClickListener, Vie
         alphaAnimationShowIcon = new AlphaAnimation(0.2f, 1.0f);
         alphaAnimationShowIcon.setDuration(500);
 
-        showAd();
+        //showAd();
     }
 
     @Override
@@ -266,16 +266,17 @@ public class CardsFragment extends Fragment implements View.OnClickListener, Vie
     }
 
     public void showAd() {
-        SharedPreferences sharedPreferences = getContext().getSharedPreferences("app", MODE_PRIVATE);
-        if (!sharedPreferences.getBoolean("isDonated", false)) {
-            AdRequest adRequest = new AdRequest.Builder().setRequestAgent("android_studio:ad_template").build();
-            ad_view_card.loadAd(adRequest);
-
-            Animation animation = new AlphaAnimation(0.0f, 1.0f);
-            animation.setDuration(500);
-            card_ad_card.setVisibility(View.VISIBLE);
-            card_ad_card.startAnimation(animation);
-        }
+//        SharedPreferences sharedPreferences = getContext().getSharedPreferences("app", MODE_PRIVATE);
+//        if (!sharedPreferences.getBoolean("isDonated", false)) {
+//            AdRequest adRequest = new AdRequest.Builder().setRequestAgent("android_studio:ad_template").build();
+//            ad_view_card.loadAd(adRequest);
+//
+//            Animation animation = new AlphaAnimation(0.0f, 1.0f);
+//            animation.setDuration(500);
+//            card_ad_card.setVisibility(View.VISIBLE);
+//            card_ad_card.startAnimation(animation);
+//        }
     }
+
 
 }

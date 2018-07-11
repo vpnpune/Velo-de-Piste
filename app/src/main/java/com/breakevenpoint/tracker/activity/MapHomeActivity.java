@@ -24,6 +24,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.SmsManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -70,8 +71,12 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
     LatLng latLng;
     Button btn_track_ride;
     Button btn_stop_track;
-    //btnStopTrack
+    int dataTransfer = 1;// 1. FOR SMS 2. FOR CELLULAR DATA
 
+
+    //btnStopTrack
+    public static String ANDROID_DEVICE_ID;
+    public static String TARGET_PHONE_NO = "9970880870";// pankaj phone no
     //location provider
     private FusedLocationProviderClient mFusedLocationClient;
     private static final String TAG = MapHomeActivity.class.getSimpleName();
@@ -103,8 +108,8 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
 
     private View mLayout;
 
-    public static  String RIDER_NAME;
-    public static String RIDER_NUMBER="";
+    public static String RIDER_NAME;
+    public static String RIDER_NUMBER = "";
 
 
     // Monitors the state of the connection to the service.
@@ -126,9 +131,12 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ANDROID_DEVICE_ID = Settings.Secure.getString(getApplicationContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID);
+
         super.onCreate(savedInstanceState);
         myReceiver = new MyReceiver();
-        Log.e(TAG, "On Create");
+        Log.e(TAG, "On Create " + ANDROID_DEVICE_ID);
         setContentView(R.layout.activity_map_home);
         mLayout = findViewById(R.id.activity_maphome);
         Bundle b = getIntent().getExtras();
@@ -136,13 +144,13 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
             String riderName = (String) b.getString("riderName");
             String riderNumber = (String) b.getString("riderNumber");
 
-            RIDER_NAME =riderName;
-            RIDER_NUMBER=riderNumber;
+            RIDER_NAME = riderName;
+            RIDER_NUMBER = riderNumber;
             Toast.makeText(this.getApplicationContext(), riderName, Toast.LENGTH_LONG).show();
         }
 
         if (!checkPermissions())
-                    requestPermissions();
+            requestPermissions();
 
 /*
         if (Utils.requestingLocationUpdates(this)) {
@@ -166,15 +174,15 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int height = displayMetrics.heightPixels;
 
-        LinearLayout buttonContainer =findViewById(R.id.activity_maphome);
+        LinearLayout buttonContainer = findViewById(R.id.activity_maphome);
         ViewGroup.LayoutParams params1 = buttonContainer.getLayoutParams();
-        params1.height = height*15/100;
+        params1.height = height * 15 / 100;
         buttonContainer.setLayoutParams(params1);
 
 
-        LinearLayout mapContainer =findViewById(R.id.map_container);
+        LinearLayout mapContainer = findViewById(R.id.map_container);
         ViewGroup.LayoutParams params = mapContainer.getLayoutParams();
-        params.height = height*85/100;
+        params.height = height * 85 / 100;
         mapContainer.setLayoutParams(params);
     }
 
@@ -194,9 +202,9 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
 
         // Restore the state of the buttons when the activity (re)launches.
         //setButtonsState(Utils.requestingLocationUpdates(this));
-        if(Utils.requestingLocationUpdates(this)){
-            if(latLng!=null)
-            setMapMarker(latLng.latitude,latLng.longitude);
+        if (Utils.requestingLocationUpdates(this)) {
+            if (latLng != null)
+                setMapMarker(latLng.latitude, latLng.longitude);
 
             Snackbar.make(mLayout, "Tracking is ON, Please Wait While It Sync with GPS", Snackbar.LENGTH_LONG)
                     .setAction("OK", null).show();
@@ -207,10 +215,10 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
 
         // Bind to the service. If the service is in foreground mode, this signals to the service
         // that since this activity is in the foreground, the service can exit foreground mode.
-        Log.i(TAG,"Before BindService");
+        Log.i(TAG, "Before BindService");
         bindService(new Intent(this, LocationUpdateService.class), mServiceConnection,
                 Context.BIND_AUTO_CREATE);
-        Log.i(TAG,"After BindService");
+        Log.i(TAG, "After BindService");
 
     }
 
@@ -233,6 +241,7 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
+
         }
 
 
@@ -309,6 +318,9 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
                     mService.requestLocationUpdates();
 
                 }
+                Snackbar.make(mLayout, "All the Best "+ RIDER_NAME +" GOH", Snackbar.LENGTH_LONG)
+                        .setAction("OK", null).show();
+
                 break;
 
 
@@ -478,16 +490,28 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
         @Override
         public void onReceive(Context context, Intent intent) {
             Location location = intent.getParcelableExtra(LocationUpdateService.EXTRA_LOCATION);
-            Log.e(TAG,"from Activity " +location.toString());
-            if(location!=null){
-                latLng = setMapMarker(location.getLatitude(),location.getLongitude());
-                AthleteLocation data = new AthleteLocation(null, new Date(),"loginId",MapHomeActivity.RIDER_NUMBER,"demoLocationId");
+            Log.e(TAG, "from Activity " + location.toString());
+            if (location != null) {
+                latLng = setMapMarker(location.getLatitude(), location.getLongitude());
+                /*AthleteLocation data = new AthleteLocation(null, new Date(), "loginId", MapHomeActivity.RIDER_NUMBER, "demoLocationId");
                 data.setLat(location.getLatitude());
                 data.setLongitude(location.getLongitude());
                 data.setRiderName(MapHomeActivity.RIDER_NAME);
                 data.setLastUpdated(new Date());
-                Log.e(TAG,data.toString());
-                sendDataGet(data,"location/submitLocGET");
+                data.setdId(ANDROID_DEVICE_ID);
+                Log.e(TAG, data.toString());*/
+
+
+                /*switch (dataTransfer) {
+                    case 1:
+                        //sendSMS(data);
+                        break;
+                    case 2:
+                        sendDataGet(data, "location/submitLocGET");
+                        break
+                                ;
+                }*/
+
 
             }
 
@@ -525,15 +549,46 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
         }
     }
 
-    private LatLng setMapMarker(double lt, double lg){
+    private LatLng setMapMarker(double lt, double lg) {
         latLng = new LatLng(lt, lg);
         //Add a marker in Sydney, Australia, and move the camera.
 
-        mMap.addMarker(new MarkerOptions().position(latLng).title(RIDER_NAME + "("+RIDER_NUMBER+")"));
+        mMap.addMarker(new MarkerOptions().position(latLng).title(RIDER_NAME + "(" + RIDER_NUMBER + ")"));
         //map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,15));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel), animateSec, null);
         return latLng;
     }
+
+//    private void sendSMS(AthleteLocation obj) {
+//        String messageBody = getSMSString(obj);
+//        SmsManager smsManager = SmsManager.getDefault();
+//        smsManager.sendTextMessage(TARGET_PHONE_NO, null, messageBody, null, null);
+//        Toast.makeText(getApplicationContext(), "SMS sent.",
+//                Toast.LENGTH_LONG).show();
+//
+//    }
+
+    public static String getSMSString(AthleteLocation mockObj) {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("lt", mockObj.getLat());
+        parameters.put("lg", mockObj.getLongitude());
+        parameters.put("ut", mockObj.getLastUpdated().getTime());
+        parameters.put("bib", mockObj.getBibNo());
+        parameters.put("rid", mockObj.getBibNo());
+        parameters.put("rName", mockObj.getRiderName());
+        parameters.put("did", ANDROID_DEVICE_ID);
+
+        StringBuilder builder = new StringBuilder("spediteur:velo,");
+
+        for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+            builder.append(entry.getKey()).append(":").append(entry.getValue()).append(",");
+        }
+        builder.substring(0, builder.length() - 1);
+        Log.e(TAG,builder.toString());
+
+        return builder.toString();
+    }
+
     //"http://localhost:8090/root/location/submitLoc"
     /*private void sendData(AthleteLocation data, String path){
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -585,7 +640,7 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
     }*/
     private void sendDataGet(AthleteLocation mockObj, String path) {
         String baseUrl = getResources().getString(R.string.app_server_path);
-        StringBuilder stringBuilder = new StringBuilder(baseUrl + "/" + path+"?");
+        StringBuilder stringBuilder = new StringBuilder(baseUrl + "/" + path + "?");
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("lat", mockObj.getLat());
         parameters.put("lg", mockObj.getLongitude());
@@ -593,6 +648,7 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
         parameters.put("bibNo", mockObj.getBibNo());
         parameters.put("userId", mockObj.getBibNo());
         parameters.put("riderName", mockObj.getRiderName());
+        parameters.put("did", ANDROID_DEVICE_ID);
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
@@ -631,6 +687,7 @@ public class MapHomeActivity extends FragmentActivity implements OnMapReadyCallb
 
 
     }
+
     public static String getParamsString(Map<String, Object> params)
             throws UnsupportedEncodingException {
         StringBuilder result = new StringBuilder();

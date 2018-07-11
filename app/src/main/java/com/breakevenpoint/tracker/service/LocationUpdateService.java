@@ -8,6 +8,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.os.Binder;
@@ -21,9 +22,11 @@ import android.support.annotation.NonNull;
 import android.support.constraint.Guideline;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.breakevenpoint.model.APP_CONSTANTS;
 import com.breakevenpoint.model.AthleteLocation;
 import com.breakevenpoint.tracker.R;
 import com.breakevenpoint.tracker.activity.MapHomeActivity;
@@ -42,6 +45,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
@@ -67,7 +71,7 @@ public class LocationUpdateService extends Service {
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
      */
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000 * 60 * 10;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000 * 60 *20;
 
     /**
      * The fastest rate for active location updates. Updates will never be more frequent
@@ -106,7 +110,9 @@ public class LocationUpdateService extends Service {
     private LocationCallback mLocationCallback;
 
     private Handler mServiceHandler;
-
+    // SMS code , need to be removed to somewhere else
+    int dataTransfer = 1;// 1. FOR SMS 2. FOR CELLULAR DATA
+    static int smsCount=0;
     /**
      * The current location.
      */
@@ -114,9 +120,10 @@ public class LocationUpdateService extends Service {
 
     public LocationUpdateService() {
     }
+
     @Override
     public void onCreate() {
-        Log.i(TAG,"On create Service");
+        Log.i(TAG, "On create Service");
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -147,6 +154,7 @@ public class LocationUpdateService extends Service {
             mNotificationManager.createNotificationChannel(mChannel);
         }
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "Service started");
@@ -236,6 +244,7 @@ public class LocationUpdateService extends Service {
             Log.e(TAG, "Lost location permission. Could not request updates. " + unlikely);
         }
     }
+
     /**
      * Removes location updates. Note that in this sample we merely log the
      * {@link SecurityException}.
@@ -245,7 +254,10 @@ public class LocationUpdateService extends Service {
         try {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
             Utils.setRequestingLocationUpdates(this, false);
+//            handler.removeCallbacks(timedTask);
+
             stopSelf();
+
         } catch (SecurityException unlikely) {
             Utils.setRequestingLocationUpdates(this, true);
             Log.e(TAG, "Lost location permission. Could not remove updates. " + unlikely);
@@ -258,7 +270,7 @@ public class LocationUpdateService extends Service {
     private Notification getNotification() {
         Intent intent = new Intent(this, LocationUpdateService.class);
 
-        CharSequence text = Utils.getLocationText(mLocation);
+        CharSequence text = Utils.getLocationText(mLocation)+" SMS Sent Today "+smsCount;
 
         // Extra to help us figure out if we arrived in onStartCommand via the notification or not.
         intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
@@ -321,12 +333,21 @@ public class LocationUpdateService extends Service {
         Intent intent = new Intent(ACTION_BROADCAST);
         intent.putExtra(EXTRA_LOCATION, location);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        if(!smsLimitCrossed()){
+            createSMSObject(location);
+            SharedPreferences sharedPreferences = getSharedPreferences(APP_CONSTANTS.VELO_PREFERENCES, MODE_PRIVATE);
+            int smsCounter = sharedPreferences.getInt(APP_CONSTANTS.SMS_COUNTER, 0);
+            smsCount =smsCounter+1;
+            updateSharedPreferences();
+        }
 
         // Update notification content if running as a foreground service.
         if (serviceIsRunningInForeground(this)) {
-            Log.e(TAG,"Notification");
+            Log.e(TAG, "Notification");
             mNotificationManager.notify(NOTIFICATION_ID, getNotification());
         }
+//        handler.post(timedTask);
+
     }
 
     /**
@@ -344,7 +365,7 @@ public class LocationUpdateService extends Service {
      * clients, we don't need to deal with IPC.
      */
     public class LocalBinder extends Binder {
-       public LocationUpdateService getService() {
+        public LocationUpdateService getService() {
             return LocationUpdateService.this;
         }
     }
@@ -372,27 +393,66 @@ public class LocationUpdateService extends Service {
     // DO 1.Update in DB
     //2. Send sms to sms server
 
-    public void createSMSObject(Location mLocation){
-        AthleteLocation athleteLocation;
-        // assign a random id
-        String locationId = UUID.randomUUID().toString();
-        // fetch athlethe information from context after the login
-        String athleteId = "nvishwakarma";
-        String bibNo = "1858";
-        if(mLocation!=null){
-            Log.e(TAG,"LAT " + mLocation.getLatitude() + " LONG "+mLocation.getLongitude());
+    public void createSMSObject(Location mLocation) {
+        AthleteLocation data = new AthleteLocation(null, new Date(), "loginId", MapHomeActivity.RIDER_NUMBER, "demoLocationId");
+        data.setLat(mLocation.getLatitude());
+        data.setLongitude(mLocation.getLongitude());
+        data.setRiderName(MapHomeActivity.RIDER_NAME);
+        data.setLastUpdated(new Date());
+        data.setdId(MapHomeActivity.ANDROID_DEVICE_ID);
+        Log.e(TAG, data.toString());
 
-        }
-        athleteLocation = new AthleteLocation(mLocation,new Date(),athleteId,bibNo,locationId );
-        Log.e(TAG,"Athlete " + athleteLocation.toString());
-        // send REST REQUEST TO UPDATE IN DB
-
-
-
+        String messageBody = MapHomeActivity.getSMSString(data);
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(MapHomeActivity.TARGET_PHONE_NO, null, messageBody, null, null);
+        Toast.makeText(getApplicationContext(), "SMS sent.",
+                Toast.LENGTH_LONG).show();
+        Log.e(TAG, "SMS SENT");
     }
+    /*private Handler handler = new Handler();
+    private int cnt = 0;
+    private Runnable timedTask = new Runnable(){
 
-    private void sendSMS(){
+        @Override
+        public void run() {
+            // TODO Auto-generated method stub
+            cnt++;
+            sendSMS("","");
+            Log.w(TAG, "Counter" +cnt);
+        handler.postDelayed(timedTask, 500);
+        }};
 
+    private void sendSMS(String phoneNumber, String message) {
+        SmsManager sms = SmsManager.getDefault();
+        sms.sendTextMessage(phoneNumber, null, message, null, null);
+    }
+*/
+    private void updateSharedPreferences(){
+        SharedPreferences sharedPreferences = getSharedPreferences(APP_CONSTANTS.VELO_PREFERENCES, MODE_PRIVATE);
+
+        SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
+        long lastUpdated= sharedPreferences.getLong(APP_CONSTANTS.LAST_UPDATED,0L);
+        if(lastUpdated !=0){
+            Date lastDay = new Date(lastUpdated);
+            Calendar lastDayCal = Calendar.getInstance();
+            lastDayCal.setTime(lastDay);
+            Calendar nowCal = Calendar.getInstance();
+            if(nowCal.get(Calendar.DATE)>lastDayCal.get(Calendar.DATE)){
+                smsCount=0;
+            }
+        }
+
+        preferencesEditor.putInt(APP_CONSTANTS.SMS_COUNTER,smsCount);
+        preferencesEditor.putLong(APP_CONSTANTS.LAST_UPDATED,new Date().getTime());
+
+        preferencesEditor.apply();
+    }
+    private boolean smsLimitCrossed(){
+        SharedPreferences sharedPreferences = getSharedPreferences(APP_CONSTANTS.VELO_PREFERENCES, MODE_PRIVATE);
+        int smsCounter = sharedPreferences.getInt(APP_CONSTANTS.SMS_COUNTER, 0);
+
+
+        return smsCounter>99;
     }
 
 

@@ -17,6 +17,15 @@ public class AthleteLocation extends Object {
     private  double lat;
     private double longitude;
 
+    public String getdId() {
+        return dId;
+    }
+
+    public void setdId(String dId) {
+        this.dId = dId;
+    }
+
+    private String dId;
 
     private  String bibNo;
 

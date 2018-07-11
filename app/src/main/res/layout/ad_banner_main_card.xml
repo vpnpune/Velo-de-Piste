@@ -17,18 +17,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/banner_ad_loading" />
+        <!--<TextView-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_gravity="center"-->
+            <!--android:text="@string/banner_ad_loading" />-->
 
-        <com.google.android.gms.ads.AdView
-            android:id="@+id/ad_view_card"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            ads:adSize="BANNER"
-            ads:adUnitId="@string/banner_ad_unit_id_main_card" />
+        <!--<com.google.android.gms.ads.AdView-->
+            <!--android:id="@+id/ad_view_card"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--ads:adSize="BANNER"-->
+            <!--ads:adUnitId="@string/banner_ad_unit_id_main_card" />-->
 
     </FrameLayout>
 </android.support.v7.widget.CardView>

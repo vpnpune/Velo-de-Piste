@@ -134,7 +134,7 @@
             android:textColor="@color/white"
             android:textSize="14sp" />
 
-        <include layout="@layout/ad_banner_main_dialog" />
+        <!--<include layout="@layout/ad_banner_main_dialog" />-->
 
     </LinearLayout>
 </android.support.v4.widget.NestedScrollView>
